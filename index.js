@@ -22,7 +22,7 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-app.get("/", (req, res) => {
+app.get("*", (req, res) => {
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   log.info(ip);
   res.redirect(process.env.URL_TO_REDIRECT);
