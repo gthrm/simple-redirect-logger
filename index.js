@@ -35,9 +35,9 @@ app.use(express.json());
 
 app.get("*", async (req, res) => {
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-  log.info(ip, req.headers);
   posts.push({ ip, headers: req.headers, date: new Date() });
   try {
+    log.info(ip, req.headers);
     await db.write();
   } catch (error) {
     log.error(error);
