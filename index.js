@@ -2,13 +2,31 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import bunyan from "bunyan";
 import { Low, JSONFile } from "lowdb";
+import { Kafka } from "kafkajs";
+import { config } from "dotenv";
+import { resolve, join } from "path";
 
+config();
+
+const clientId = process.env.CLIENT_ID;
+const brokers = process.env.BROKERS.split(",").map((broker) => broker.trim());
+const topic = process.env.IP_TOPIC;
+const urlToRedirect = process.env.URL_TO_REDIRECT;
 const port = process.env.PORT || 3344;
+const logPath = process.env.LOG_PATH;
+
+const kafka = new Kafka({
+  clientId,
+  brokers,
+});
+
+const producer = kafka.producer();
+
 const app = express();
 
 const log = bunyan.createLogger({
   name: "ips",
-  streams: [{ path: process.env.LOG_PATH }],
+  streams: [{ path: join(resolve(), logPath) }],
 });
 
 const limiter = rateLimit({
@@ -21,6 +39,15 @@ const limiter = rateLimit({
     },
   },
 });
+
+const sendIp = async (ip) => {
+  await producer.connect();
+  await producer.send({
+    topic,
+    messages: [{ value: JSON.stringify({ ip, service: clientId }) }],
+  });
+  await producer.disconnect();
+};
 
 // Lowdb connect
 const adapter = new JSONFile("db.json");
@@ -42,9 +69,10 @@ app.get("*", async (req, res) => {
   } catch (error) {
     log.error(error);
   }
-  res.redirect(process.env.URL_TO_REDIRECT);
+  res.redirect(urlToRedirect);
+  sendIp(ip);
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`App listening at http://localhost:${port}`);
 });
