@@ -40,11 +40,11 @@ const limiter = rateLimit({
   },
 });
 
-const sendIp = async (ip) => {
+const sendIp = async (ip, service = "Empty") => {
   await producer.connect();
   await producer.send({
     topic,
-    messages: [{ value: JSON.stringify({ ip, service: clientId }) }],
+    messages: [{ value: JSON.stringify({ ip, service }) }],
   });
   await producer.disconnect();
 };
@@ -60,8 +60,9 @@ const { posts } = db.data;
 app.use(limiter);
 app.use(express.json());
 
-app.get("*", async (req, res) => {
+app.get("*/:service", async (req, res) => {
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  const service = req.params?.service;
   posts.push({ ip, headers: req.headers, date: new Date() });
   try {
     log.info(ip, req.headers);
@@ -70,7 +71,7 @@ app.get("*", async (req, res) => {
     log.error(error);
   }
   res.redirect(urlToRedirect);
-  sendIp(ip);
+  sendIp(ip, service);
 });
 
 app.listen(port, async () => {
