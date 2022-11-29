@@ -11,11 +11,15 @@
   "author": "cdROma",
   "license": "ISC",
   "dependencies": {
-    "bunyan": "1.8.15",
     "dotenv": "^10.0.0",
     "express": "4.17.1",
     "express-rate-limit": "5.5.0",
     "kafkajs": "^1.15.0",
-    "lowdb": "3.0.0"
+    "winston": "^3.8.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.28.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0"
   }
 }

@@ -1,33 +1,13 @@
-import express from "express";
-import rateLimit from "express-rate-limit";
-import bunyan from "bunyan";
-import { Low, JSONFile } from "lowdb";
-import { Kafka } from "kafkajs";
-import { config } from "dotenv";
-import { resolve, join } from "path";
+import express from 'express';
+import rateLimit from 'express-rate-limit';
+import { config } from 'dotenv';
+import { redirect } from './utils/redirect.utils.js';
+import { logger } from './utils/logger.utils.js';
 
 config();
 
-const clientId = process.env.CLIENT_ID;
-const brokers = process.env.BROKERS.split(",").map((broker) => broker.trim());
-const topic = process.env.IP_TOPIC;
-const urlToRedirect = process.env.URL_TO_REDIRECT;
 const port = process.env.PORT || 3344;
-const logPath = process.env.LOG_PATH;
-
-const kafka = new Kafka({
-  clientId,
-  brokers,
-});
-
-const producer = kafka.producer();
-
 const app = express();
-
-const log = bunyan.createLogger({
-  name: "ips",
-  streams: [{ path: join(resolve(), logPath) }],
-});
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -35,45 +15,18 @@ const limiter = rateLimit({
   message: {
     error: {
       code: 429,
-      message: "Too many requests from your IP. Please wait 15 Minutes",
+      message: 'Too many requests from your IP. Please wait 15 Minutes',
     },
   },
 });
 
-const sendIp = async (ip, service = "Empty") => {
-  await producer.connect();
-  await producer.send({
-    topic,
-    messages: [{ value: JSON.stringify({ ip, service }) }],
-  });
-  await producer.disconnect();
-};
-
-// Lowdb connect
-const adapter = new JSONFile("db.json");
-const db = new Low(adapter);
-await db.read();
-db.data ||= { posts: [] };
-
-const { posts } = db.data;
-
 app.use(limiter);
 app.use(express.json());
 
-app.get("*/:service", async (req, res) => {
-  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-  const service = req.params?.service;
-  posts.push({ ip, headers: req.headers, date: new Date() });
-  try {
-    log.info(ip, req.headers);
-    await db.write();
-  } catch (error) {
-    log.error(error);
-  }
-  res.redirect(urlToRedirect);
-  sendIp(ip, service);
+app.get('*', async (req, res) => {
+  await redirect(req, res);
 });
 
 app.listen(port, async () => {
-  console.log(`App listening at http://localhost:${port}`);
+  logger.info(`App listening at http://localhost:${port}`);
 });
