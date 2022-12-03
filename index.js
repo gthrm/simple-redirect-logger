@@ -23,6 +23,10 @@ const limiter = rateLimit({
 app.use(limiter);
 app.use(express.json());
 
+app.get('*/:service', async (req, res) => {
+  await redirect(req, res);
+});
+
 app.get('*', async (req, res) => {
   await redirect(req, res);
 });
