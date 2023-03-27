@@ -1,7 +1,7 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { config } from 'dotenv';
-import { redirect } from './utils/redirect.utils.js';
+import { redirect, testKafka } from './utils/redirect.utils.js';
 import { logger } from './utils/logger.utils.js';
 
 config();
@@ -23,13 +23,11 @@ const limiter = rateLimit({
 app.use(limiter);
 app.use(express.json());
 
-app.get('*/:service', async (req, res) => {
-  await redirect(req, res);
-});
+app.get('/test_kafka/:ip/:service', async (req, res) => testKafka(req, res));
 
-app.get('*', async (req, res) => {
-  await redirect(req, res);
-});
+app.get('*/:service', async (req, res) => redirect(req, res));
+
+app.get('*', async (req, res) => redirect(req, res));
 
 app.listen(port, async () => {
   logger.info(`App listening at http://localhost:${port}`);

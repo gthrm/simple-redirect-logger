@@ -17,3 +17,16 @@ export async function redirect(req, res) {
   res.redirect(urlToRedirect);
   sendIp(ip, service);
 }
+
+export async function testKafka(req, res) {
+  try {
+    const { ip, service } = req.params;
+    if (ip && service) {
+      await sendIp(ip, service);
+    }
+    return res.status(200).send('<p>Ok</p>');
+  } catch (error) {
+    logger.error(error);
+    return res.status(502).send('<p>🙄</p>');
+  }
+}
