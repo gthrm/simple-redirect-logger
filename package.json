@@ -1,6 +1,6 @@
 {
   "name": "simple-redirect-logger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Redirect from Redirecting from your domain to another link, for example a social network",
   "main": "index.js",
   "scripts": {
